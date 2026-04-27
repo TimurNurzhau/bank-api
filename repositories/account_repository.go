@@ -49,7 +49,7 @@ func (r *AccountRepository) FindByUserID(userID int) ([]models.Account, error) {
 	return accounts, rows.Err()
 }
 
-// ИСПРАВЛЕНО: проверка прав прямо в SQL
+// FindByIDAndUserID - проверка прав прямо в SQL
 func (r *AccountRepository) FindByIDAndUserID(id, userID int) (*models.Account, error) {
 	account := &models.Account{}
 	query := `SELECT id, user_id, balance, currency, created_at FROM accounts WHERE id = $1 AND user_id = $2`
@@ -67,7 +67,7 @@ func (r *AccountRepository) FindByIDAndUserID(id, userID int) (*models.Account, 
 	return account, nil
 }
 
-// Старый метод оставляем для внутреннего использования (без проверки прав)
+// FindByID - без проверки прав (для внутреннего использования)
 func (r *AccountRepository) FindByID(id int) (*models.Account, error) {
 	account := &models.Account{}
 	query := `SELECT id, user_id, balance, currency, created_at FROM accounts WHERE id = $1`
@@ -101,4 +101,77 @@ func (r *AccountRepository) UpdateBalance(accountID int, amount float64) error {
 		return errors.New("insufficient funds or account not found")
 	}
 	return nil
+}
+
+// TransferInTransaction - перевод между счетами в одной транзакции
+func (r *AccountRepository) TransferInTransaction(fromID, toID int, amount float64) error {
+	// Начинаем транзакцию
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Списание со счёта отправителя
+	result, err := tx.Exec("UPDATE accounts SET balance = balance - $1 WHERE id = $2 AND balance >= $1", amount, fromID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errors.New("insufficient funds or account not found")
+	}
+
+	// Зачисление на счёт получателя
+	_, err = tx.Exec("UPDATE accounts SET balance = balance + $1 WHERE id = $2", amount, toID)
+	if err != nil {
+		return err
+	}
+
+	// Фиксируем транзакцию
+	return tx.Commit()
+}
+
+// DepositInTransaction - пополнение счёта в транзакции
+func (r *AccountRepository) DepositInTransaction(accountID int, amount float64) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec("UPDATE accounts SET balance = balance + $1 WHERE id = $2", amount, accountID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// WithdrawInTransaction - списание со счёта в транзакции
+func (r *AccountRepository) WithdrawInTransaction(accountID int, amount float64) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	result, err := tx.Exec("UPDATE accounts SET balance = balance - $1 WHERE id = $2 AND balance >= $1", amount, accountID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errors.New("insufficient funds")
+	}
+
+	return tx.Commit()
 }

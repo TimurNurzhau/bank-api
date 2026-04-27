@@ -22,14 +22,16 @@ type Services struct {
 func NewServices(repos *repositories.Repositories, cfg *config.Config, logger *logrus.Logger) *Services {
 	accountService := NewAccountService(repos.Account)
 	smtpPort, _ := strconv.Atoi(cfg.SMTPPort)
+	
+	emailService := NewEmailService(cfg.SMTPHost, smtpPort, cfg.SMTPUser, cfg.SMTPPass)
 
 	return &Services{
 		Auth:     NewAuthService(repos.User, cfg),
 		Account:  accountService,
-		Transfer: NewTransferService(repos.Account, repos.Transaction, accountService),
+		Transfer: NewTransferService(repos.Account, repos.Transaction, accountService, emailService, repos.User),
 		Card:     NewCardService(repos.Card, repos.Account, cfg.HMACSecret, cfg.PGPKey),
 		Credit:   NewCreditService(repos.Credit, repos.Account, accountService),
 		CBR:      NewCBRService(),
-		Email:    NewEmailService(cfg.SMTPHost, smtpPort, cfg.SMTPUser, cfg.SMTPPass),
+		Email:    emailService,
 	}
 }

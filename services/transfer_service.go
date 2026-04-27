@@ -11,17 +11,23 @@ type TransferService struct {
 	accountRepo     *repositories.AccountRepository
 	transactionRepo *repositories.TransactionRepository
 	accountService  *AccountService
+	emailService    *EmailService
+	userRepo        *repositories.UserRepository
 }
 
 func NewTransferService(
 	accountRepo *repositories.AccountRepository,
 	transactionRepo *repositories.TransactionRepository,
 	accountService *AccountService,
+	emailService *EmailService,
+	userRepo *repositories.UserRepository,
 ) *TransferService {
 	return &TransferService{
 		accountRepo:     accountRepo,
 		transactionRepo: transactionRepo,
 		accountService:  accountService,
+		emailService:    emailService,
+		userRepo:        userRepo,
 	}
 }
 
@@ -33,6 +39,7 @@ func (s *TransferService) Transfer(userID int, req *models.TransferRequest) erro
 		return errors.New("cannot transfer to the same account")
 	}
 
+	// Проверяем счёт отправителя
 	fromAccount, err := s.accountService.GetAccountByID(req.FromAccountID, userID)
 	if err != nil {
 		return err
@@ -41,19 +48,18 @@ func (s *TransferService) Transfer(userID int, req *models.TransferRequest) erro
 		return errors.New("insufficient funds")
 	}
 
-	_, err = s.accountRepo.FindByID(req.ToAccountID)
+	// Проверяем существование счёта получателя
+	toAccount, err := s.accountRepo.FindByID(req.ToAccountID)
 	if err != nil {
 		return errors.New("recipient account not found")
 	}
 
-	if err := s.accountRepo.UpdateBalance(req.FromAccountID, -req.Amount); err != nil {
-		return err
-	}
-	if err := s.accountRepo.UpdateBalance(req.ToAccountID, req.Amount); err != nil {
-		_ = s.accountRepo.UpdateBalance(req.FromAccountID, req.Amount)
+	// Используем ТРАНЗАКЦИЮ для перевода
+	if err := s.accountRepo.TransferInTransaction(req.FromAccountID, req.ToAccountID, req.Amount); err != nil {
 		return err
 	}
 
+	// Записываем транзакцию
 	tx := &models.Transaction{
 		FromAccountID: &req.FromAccountID,
 		ToAccountID:   &req.ToAccountID,
@@ -63,6 +69,16 @@ func (s *TransferService) Transfer(userID int, req *models.TransferRequest) erro
 		Description:   req.Description,
 	}
 	_ = s.transactionRepo.Create(tx)
+
+	// Отправляем email отправителю (списание)
+	if fromUser, err := s.userRepo.FindByID(userID); err == nil && fromUser != nil && s.emailService != nil {
+		_ = s.emailService.SendPaymentNotification(fromUser.Email, -req.Amount)
+	}
+
+	// Отправляем email получателю (зачисление)
+	if toUser, err := s.userRepo.FindByID(toAccount.UserID); err == nil && toUser != nil && s.emailService != nil {
+		_ = s.emailService.SendPaymentNotification(toUser.Email, req.Amount)
+	}
 
 	return nil
 }
@@ -80,6 +96,11 @@ func (s *TransferService) Deposit(userID int, req *models.DepositRequest) error 
 		Description: "пополнение счёта",
 	}
 	_ = s.transactionRepo.Create(tx)
+
+	// Отправляем email при пополнении
+	if user, err := s.userRepo.FindByID(userID); err == nil && user != nil && s.emailService != nil {
+		_ = s.emailService.SendPaymentNotification(user.Email, req.Amount)
+	}
 
 	return nil
 }
