@@ -104,7 +104,7 @@ func (h *CreditHandler) EarlyRepayment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Amount float64 `json:"amount" validate:"required,gt=0"`
+		Amount float64 `json:"amount"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -112,10 +112,8 @@ func (h *CreditHandler) EarlyRepayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Amount <= 0 {
-		response.Error(w, http.StatusBadRequest, "amount must be positive")
-		return
-	}
+	// Проверка amount > 0 выполняется внутри creditService.EarlyRepayment
+	// Не дублируем проверку здесь
 
 	if err := h.creditService.EarlyRepayment(creditID, userID, req.Amount); err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())

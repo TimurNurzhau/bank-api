@@ -1,6 +1,7 @@
 package services
 
 import (
+	"sync"
 	"time"
 
 	"bank-api/models"
@@ -16,6 +17,7 @@ type Scheduler struct {
 	emailService *EmailService
 	logger       *logrus.Logger
 	stopCh       chan struct{}
+	stopOnce     sync.Once
 }
 
 func NewScheduler(repos *repositories.Repositories, emailService *EmailService, logger *logrus.Logger) *Scheduler {
@@ -48,7 +50,9 @@ func (s *Scheduler) Start(interval time.Duration) {
 }
 
 func (s *Scheduler) Stop() {
-	close(s.stopCh)
+	s.stopOnce.Do(func() {
+		close(s.stopCh)
+	})
 }
 
 func (s *Scheduler) processOverduePayments() {

@@ -6,7 +6,7 @@ import (
 
 	"bank-api/middleware"
 	"bank-api/models"
-	"bank-api/response"
+	"bank-api/response"  // <--- ЭТОТ ИМПОРТ НУЖЕН
 	"bank-api/services"
 
 	"github.com/go-playground/validator/v10"

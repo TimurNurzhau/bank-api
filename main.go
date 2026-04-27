@@ -52,6 +52,7 @@ func main() {
 
 	scheduler := services.NewScheduler(repos, svcs.Email, logger)
 	scheduler.Start(12 * time.Hour)
+	defer scheduler.Stop() // Graceful shutdown для шедулера
 
 	r := mux.NewRouter()
 	r.Use(middleware.LoggingMiddleware(logger))

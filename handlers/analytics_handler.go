@@ -61,7 +61,15 @@ func (h *AnalyticsHandler) PredictBalance(w http.ResponseWriter, r *http.Request
 	daysStr := r.URL.Query().Get("days")
 	days := 30
 	if daysStr != "" {
-		days, _ = strconv.Atoi(daysStr)
+		parsed, err := strconv.Atoi(daysStr)
+		if err == nil && parsed > 0 {
+			days = parsed
+		}
+	}
+
+	// Ограничиваем максимальный период 365 днями
+	if days > 365 {
+		days = 365
 	}
 
 	balance, err := h.analyticsService.PredictBalance(accountID, userID, days)

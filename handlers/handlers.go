@@ -24,6 +24,6 @@ func NewHandlers(svcs *services.Services, repos *repositories.Repositories, logg
 		Transfer:  NewTransferHandler(svcs.Transfer, logger),
 		Card:      NewCardHandler(svcs.Card, logger),
 		Credit:    NewCreditHandler(svcs.Credit, svcs.CBR, logger),
-		Analytics: NewAnalyticsHandler(analyticsService, logger),
+		Analytics: NewAnalyticsHandler(analyticsService, logger), // <--- ИСПРАВЛЕНО
 	}
 }

@@ -8,7 +8,6 @@ import (
 	"bank-api/models"
 	"bank-api/response"
 	"bank-api/services"
-	"bank-api/utils"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/sirupsen/logrus"
@@ -61,10 +60,9 @@ func (h *CardHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Дополнительная проверка: маскируем номера карт для безопасности
-	for i := range cards {
-		cards[i].MaskedNumber = utils.MaskCardNumber(cards[i].MaskedNumber)
-	}
+	// ВНИМАНИЕ: НЕ МАСКИРУЙТЕ НОМЕР ПОВТОРНО!
+	// MaskedNumber уже содержит замаскированный номер из сервиса (первые 6 и последние 4 цифры)
+	// Повторное маскирование испортит данные
 
 	if cards == nil {
 		cards = []models.Card{}
