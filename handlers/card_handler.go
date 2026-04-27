@@ -9,6 +9,7 @@ import (
 	"bank-api/models"
 	"bank-api/response"
 	"bank-api/services"
+	"bank-api/utils"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -58,6 +59,11 @@ func (h *CardHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Дополнительная проверка: маскируем номера карт для безопасности
+	for i := range cards {
+		cards[i].MaskedNumber = utils.MaskCardNumber(cards[i].MaskedNumber)
+	}
+
 	if cards == nil {
 		cards = []models.Card{}
 	}
@@ -86,6 +92,7 @@ func (h *CardHandler) Pay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверка прав происходит внутри PayWithCard через FindByIDAndUserID
 	if err := h.cardService.PayWithCard(req.CardID, userID, req.Amount); err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return

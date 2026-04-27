@@ -61,6 +61,14 @@ func (h *AccountHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверка: убеждаемся что все счета принадлежат пользователю
+	for _, account := range accounts {
+		if account.UserID != userID {
+			response.Error(w, http.StatusForbidden, "access denied to some accounts")
+			return
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(accounts); err != nil {
 		log.Printf("encode error: %v", err)

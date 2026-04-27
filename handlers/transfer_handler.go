@@ -39,6 +39,13 @@ func (h *TransferHandler) Transfer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Дополнительная проверка: нельзя переводить на тот же счет
+	if req.FromAccountID == req.ToAccountID {
+		response.Error(w, http.StatusBadRequest, "cannot transfer to the same account")
+		return
+	}
+
+	// Проверка прав на from_account происходит внутри TransferService
 	if err := h.transferService.Transfer(userID, &req); err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
@@ -65,6 +72,7 @@ func (h *TransferHandler) Deposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверка прав на account происходит внутри Deposit
 	if err := h.transferService.Deposit(userID, &req); err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return

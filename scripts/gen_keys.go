@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	
+
 	"bank-api/utils"
 )
 
@@ -13,7 +13,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	fmt.Println("=== PGP PUBLIC KEY ===")
 	fmt.Println(pub)
 	fmt.Println("\n=== PGP PRIVATE KEY ===")

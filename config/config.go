@@ -36,8 +36,8 @@ func Load() *Config {
 		SMTPPort:      getEnv("SMTP_PORT", "587"),
 		SMTPUser:      getEnv("SMTP_USER", ""),
 		SMTPPass:      getEnv("SMTP_PASS", ""),
-		PGPPublicKey:  getEnv("PGP_PUBLIC_KEY", ""),   // Добавлено
-		PGPPrivateKey: getEnv("PGP_PRIVATE_KEY", ""),  // Добавлено
+		PGPPublicKey:  getEnv("PGP_PUBLIC_KEY", ""),  // Добавлено
+		PGPPrivateKey: getEnv("PGP_PRIVATE_KEY", ""), // Добавлено
 		HMACSecret:    getEnv("HMAC_SECRET", "hmac-secret"),
 		ServerPort:    getEnv("SERVER_PORT", "8080"),
 		LogLevel:      getEnv("LOG_LEVEL", "debug"),

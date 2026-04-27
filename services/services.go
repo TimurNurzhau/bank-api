@@ -22,7 +22,7 @@ type Services struct {
 func NewServices(repos *repositories.Repositories, cfg *config.Config, logger *logrus.Logger) *Services {
 	accountService := NewAccountService(repos.Account)
 	smtpPort, _ := strconv.Atoi(cfg.SMTPPort)
-	
+
 	emailService := NewEmailService(cfg.SMTPHost, smtpPort, cfg.SMTPUser, cfg.SMTPPass)
 
 	// Логируем статус PGP

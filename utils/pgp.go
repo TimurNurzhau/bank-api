@@ -44,16 +44,16 @@ func GenerateTestPGPKeys() (publicKey, privateKey string, err error) {
 	if err != nil {
 		return "", "", fmt.Errorf("failed to generate key: %v", err)
 	}
-	
+
 	publicKey, err = rsaKey.GetArmoredPublicKey()
 	if err != nil {
 		return "", "", fmt.Errorf("failed to get public key: %v", err)
 	}
-	
+
 	privateKey, err = rsaKey.Armor()
 	if err != nil {
 		return "", "", fmt.Errorf("failed to get private key: %v", err)
 	}
-	
+
 	return publicKey, privateKey, nil
 }
