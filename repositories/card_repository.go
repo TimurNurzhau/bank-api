@@ -55,6 +55,29 @@ func (r *CardRepository) FindByAccountID(accountID int) ([]models.Card, error) {
 	return cards, rows.Err()
 }
 
+// ИСПРАВЛЕНО: проверка прав через JOIN
+func (r *CardRepository) FindByIDAndUserID(cardID, userID int) (*models.Card, error) {
+	card := &models.Card{}
+	query := `
+		SELECT c.id, c.account_id, c.encrypted_number, c.encrypted_expiry, 
+		       c.cvv_hash, c.hmac, c.masked_number, c.expiry_month, c.expiry_year, c.created_at
+		FROM cards c
+		JOIN accounts a ON c.account_id = a.id
+		WHERE c.id = $1 AND a.user_id = $2`
+
+	err := r.db.QueryRow(query, cardID, userID).Scan(
+		&card.ID, &card.AccountID, &card.EncryptedNumber, &card.EncryptedExpiry,
+		&card.CVVHash, &card.HMAC, &card.MaskedNumber, &card.ExpiryMonth, &card.ExpiryYear, &card.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("card not found or access denied")
+		}
+		return nil, err
+	}
+	return card, nil
+}
+
 func (r *CardRepository) FindByID(id int) (*models.Card, error) {
 	card := &models.Card{}
 	query := `SELECT id, account_id, encrypted_number, encrypted_expiry, cvv_hash, hmac, masked_number, expiry_month, expiry_year, created_at FROM cards WHERE id = $1`

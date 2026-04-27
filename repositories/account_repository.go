@@ -49,6 +49,25 @@ func (r *AccountRepository) FindByUserID(userID int) ([]models.Account, error) {
 	return accounts, rows.Err()
 }
 
+// ИСПРАВЛЕНО: проверка прав прямо в SQL
+func (r *AccountRepository) FindByIDAndUserID(id, userID int) (*models.Account, error) {
+	account := &models.Account{}
+	query := `SELECT id, user_id, balance, currency, created_at FROM accounts WHERE id = $1 AND user_id = $2`
+
+	err := r.db.QueryRow(query, id, userID).Scan(
+		&account.ID, &account.UserID, &account.Balance,
+		&account.Currency, &account.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("account not found or access denied")
+		}
+		return nil, err
+	}
+	return account, nil
+}
+
+// Старый метод оставляем для внутреннего использования (без проверки прав)
 func (r *AccountRepository) FindByID(id int) (*models.Account, error) {
 	account := &models.Account{}
 	query := `SELECT id, user_id, balance, currency, created_at FROM accounts WHERE id = $1`

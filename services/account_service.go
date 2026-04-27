@@ -38,17 +38,9 @@ func (s *AccountService) GetUserAccounts(userID int) ([]models.Account, error) {
 	return s.accountRepo.FindByUserID(userID)
 }
 
+// ИСПРАВЛЕНО: используем метод с проверкой прав
 func (s *AccountService) GetAccountByID(accountID, userID int) (*models.Account, error) {
-	account, err := s.accountRepo.FindByID(accountID)
-	if err != nil {
-		return nil, err
-	}
-
-	if account.UserID != userID {
-		return nil, errors.New("access denied")
-	}
-
-	return account, nil
+	return s.accountRepo.FindByIDAndUserID(accountID, userID)
 }
 
 func (s *AccountService) Deposit(userID int, req *models.DepositRequest) error {

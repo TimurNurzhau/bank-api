@@ -32,13 +32,10 @@ func NewCardService(
 }
 
 func (s *CardService) IssueCard(userID, accountID int) (*models.Card, error) {
-	// Проверка владельца счёта
-	account, err := s.accountRepo.FindByID(accountID)
+	// Проверка владельца счёта через новый метод
+	_, err := s.accountRepo.FindByIDAndUserID(accountID, userID)
 	if err != nil {
 		return nil, err
-	}
-	if account.UserID != userID {
-		return nil, errors.New("access denied")
 	}
 
 	// Генерация номера карты
@@ -101,23 +98,31 @@ func (s *CardService) GetUserCards(userID int) ([]models.Card, error) {
 	return allCards, nil
 }
 
+// ИСПРАВЛЕНО: используем метод с проверкой прав
 func (s *CardService) GetCardDetails(cardID, userID int) (*models.Card, error) {
-	card, err := s.cardRepo.FindByID(cardID)
+	return s.cardRepo.FindByIDAndUserID(cardID, userID)
+}
+
+// НОВЫЙ МЕТОД: оплата картой
+func (s *CardService) PayWithCard(cardID, userID int, amount float64, accountService *AccountService) error {
+	if amount <= 0 {
+		return errors.New("amount must be positive")
+	}
+
+	// Проверяем права на карту
+	card, err := s.cardRepo.FindByIDAndUserID(cardID, userID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Проверка владельца
-	account, err := s.accountRepo.FindByID(card.AccountID)
-	if err != nil {
-		return nil, err
-	}
-	if account.UserID != userID {
-		return nil, errors.New("access denied")
+	// Проверяем HMAC (целостность данных)
+	// В реальном проекте нужно расшифровать номер и проверить
+	// Для демо пропускаем
+
+	// Списываем деньги со счёта
+	if err := accountService.Withdraw(userID, card.AccountID, amount); err != nil {
+		return err
 	}
 
-	// Проверка целостности через HMAC
-	// (в реальном проекте — расшифровка и сверка)
-
-	return card, nil
+	return nil
 }
