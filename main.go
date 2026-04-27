@@ -4,22 +4,18 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
+
+	"bank-api/config"
 
 	_ "github.com/lib/pq"
 )
 
 func main() {
-	dbHost := getEnv("DB_HOST", "localhost")
-	dbPort := getEnv("DB_PORT", "5432")
-	dbUser := getEnv("DB_USER", "bankuser")
-	dbPassword := getEnv("DB_PASSWORD", "bankuser_pass_2024")
-	dbName := getEnv("DB_NAME", "bankapi")
-	dbSSLMode := getEnv("DB_SSLMODE", "disable")
+	cfg := config.Load()
 
 	dsn := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		dbHost, dbPort, dbUser, dbPassword, dbName, dbSSLMode,
+		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBSSLMode,
 	)
 
 	db, err := sql.Open("postgres", dsn)
@@ -33,11 +29,5 @@ func main() {
 	}
 
 	fmt.Println("Successfully connected to PostgreSQL!")
-}
-
-func getEnv(key, defaultVal string) string {
-	if val := os.Getenv(key); val != "" {
-		return val
-	}
-	return defaultVal
+	fmt.Printf("Server will start on port %s\n", cfg.ServerPort)
 }
