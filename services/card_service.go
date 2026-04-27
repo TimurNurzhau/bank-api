@@ -32,7 +32,7 @@ func NewCardService(
 }
 
 func (s *CardService) IssueCard(userID, accountID int) (*models.Card, error) {
-	// Проверка владельца счёта через новый метод
+	// Проверка владельца счёта
 	_, err := s.accountRepo.FindByIDAndUserID(accountID, userID)
 	if err != nil {
 		return nil, err
@@ -98,13 +98,13 @@ func (s *CardService) GetUserCards(userID int) ([]models.Card, error) {
 	return allCards, nil
 }
 
-// ИСПРАВЛЕНО: используем метод с проверкой прав
+// Получение деталей карты с проверкой прав
 func (s *CardService) GetCardDetails(cardID, userID int) (*models.Card, error) {
 	return s.cardRepo.FindByIDAndUserID(cardID, userID)
 }
 
-// НОВЫЙ МЕТОД: оплата картой
-func (s *CardService) PayWithCard(cardID, userID int, amount float64, accountService *AccountService) error {
+// Оплата картой
+func (s *CardService) PayWithCard(cardID, userID int, amount float64) error {
 	if amount <= 0 {
 		return errors.New("amount must be positive")
 	}
@@ -116,11 +116,22 @@ func (s *CardService) PayWithCard(cardID, userID int, amount float64, accountSer
 	}
 
 	// Проверяем HMAC (целостность данных)
-	// В реальном проекте нужно расшифровать номер и проверить
-	// Для демо пропускаем
+	if !utils.VerifyHMAC(card.EncryptedNumber, card.HMAC, s.hmacSecret) {
+		return errors.New("card data integrity check failed")
+	}
 
-	// Списываем деньги со счёта
-	if err := accountService.Withdraw(userID, card.AccountID, amount); err != nil {
+	// Получаем счёт
+	account, err := s.accountRepo.FindByID(card.AccountID)
+	if err != nil {
+		return err
+	}
+
+	if account.Balance < amount {
+		return errors.New("insufficient funds")
+	}
+
+	// Списываем деньги
+	if err := s.accountRepo.UpdateBalance(card.AccountID, -amount); err != nil {
 		return err
 	}
 

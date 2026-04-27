@@ -67,10 +67,9 @@ func (h *CardHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// НОВЫЙ МЕТОД: оплата картой
+// Оплата картой
 func (h *CardHandler) Pay(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
-	_ = userID // Временное решение, чтобы компилятор не ругался
 
 	var req struct {
 		CardID int     `json:"card_id" validate:"required"`
@@ -87,7 +86,14 @@ func (h *CardHandler) Pay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Временная заглушка - требует доработки сервиса
-	http.Error(w, `{"error":"payment processing coming soon"}`, http.StatusNotImplemented)
-}
+	if err := h.cardService.PayWithCard(req.CardID, userID, req.Amount); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		return
+	}
 
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":  "success",
+		"message": "Payment completed successfully",
+	})
+}
