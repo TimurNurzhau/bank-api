@@ -7,6 +7,7 @@ import (
 
 	"bank-api/models"
 	"bank-api/services"
+	"bank-api/utils"
 )
 
 type AuthHandler struct {
@@ -26,6 +27,21 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	if req.Username == "" || req.Email == "" || req.Password == "" {
 		http.Error(w, `{"error":"username, email and password are required"}`, http.StatusBadRequest)
+		return
+	}
+
+	if !utils.IsValidUsername(req.Username) {
+		http.Error(w, `{"error":"username must be 3-50 characters"}`, http.StatusBadRequest)
+		return
+	}
+
+	if !utils.IsValidEmail(req.Email) {
+		http.Error(w, `{"error":"invalid email format"}`, http.StatusBadRequest)
+		return
+	}
+
+	if !utils.IsValidPassword(req.Password) {
+		http.Error(w, `{"error":"password must be at least 6 characters"}`, http.StatusBadRequest)
 		return
 	}
 

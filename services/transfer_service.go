@@ -29,39 +29,31 @@ func (s *TransferService) Transfer(userID int, req *models.TransferRequest) erro
 	if req.Amount <= 0 {
 		return errors.New("amount must be positive")
 	}
-
 	if req.FromAccountID == req.ToAccountID {
 		return errors.New("cannot transfer to the same account")
 	}
 
-	// Проверка прав на счёт отправителя
 	fromAccount, err := s.accountService.GetAccountByID(req.FromAccountID, userID)
 	if err != nil {
 		return err
 	}
-
 	if fromAccount.Balance < req.Amount {
 		return errors.New("insufficient funds")
 	}
 
-	// Проверка существования счёта получателя
 	_, err = s.accountRepo.FindByID(req.ToAccountID)
 	if err != nil {
 		return errors.New("recipient account not found")
 	}
 
-	// Атомарная операция: списание + зачисление
 	if err := s.accountRepo.UpdateBalance(req.FromAccountID, -req.Amount); err != nil {
 		return err
 	}
-
 	if err := s.accountRepo.UpdateBalance(req.ToAccountID, req.Amount); err != nil {
-		// Откат списания
 		_ = s.accountRepo.UpdateBalance(req.FromAccountID, req.Amount)
 		return err
 	}
 
-	// Запись транзакции
 	tx := &models.Transaction{
 		FromAccountID: &req.FromAccountID,
 		ToAccountID:   &req.ToAccountID,
