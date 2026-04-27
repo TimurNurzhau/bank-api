@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"bank-api/config"
@@ -59,10 +63,10 @@ func main() {
 	authRouter.Use(middleware.AuthMiddleware(cfg.JWTSecret))
 
 	authRouter.HandleFunc("/accounts", h.Account.Create).Methods("POST")
-    authRouter.HandleFunc("/accounts", h.Account.List).Methods("GET")
+	authRouter.HandleFunc("/accounts", h.Account.List).Methods("GET")
 	authRouter.HandleFunc("/cards", h.Card.Issue).Methods("POST")
 	authRouter.HandleFunc("/cards", h.Card.List).Methods("GET")
-	authRouter.HandleFunc("/cards/pay", h.Card.Pay).Methods("POST")  
+	authRouter.HandleFunc("/cards/pay", h.Card.Pay).Methods("POST")
 	authRouter.HandleFunc("/transfer", h.Transfer.Transfer).Methods("POST")
 	authRouter.HandleFunc("/deposit", h.Transfer.Deposit).Methods("POST")
 	authRouter.HandleFunc("/credits", h.Credit.Create).Methods("POST")
@@ -71,6 +75,31 @@ func main() {
 	authRouter.HandleFunc("/analytics", h.Analytics.GetAnalytics).Methods("GET")
 	authRouter.HandleFunc("/accounts/{accountId}/predict", h.Analytics.PredictBalance).Methods("GET")
 
-	logger.Infof("Server starting on port %s", cfg.ServerPort)
-	logger.Fatal(http.ListenAndServe(":"+cfg.ServerPort, r))
+	// Graceful shutdown
+	srv := &http.Server{
+		Addr:    ":" + cfg.ServerPort,
+		Handler: r,
+	}
+
+	go func() {
+		logger.Infof("Server starting on port %s", cfg.ServerPort)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Fatalf("listen: %s", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	logger.Info("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		logger.Fatal("Server forced to shutdown:", err)
+	}
+
+	logger.Info("Server exited gracefully")
 }
