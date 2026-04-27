@@ -62,7 +62,7 @@ func main() {
     authRouter.HandleFunc("/accounts", h.Account.List).Methods("GET")
 	authRouter.HandleFunc("/cards", h.Card.Issue).Methods("POST")
 	authRouter.HandleFunc("/cards", h.Card.List).Methods("GET")
-	authRouter.HandleFunc("/cards/pay", h.Card.Pay).Methods("POST")  // ДОБАВИТЬ ЭТУ СТРОКУ
+	authRouter.HandleFunc("/cards/pay", h.Card.Pay).Methods("POST")  
 	authRouter.HandleFunc("/transfer", h.Transfer.Transfer).Methods("POST")
 	authRouter.HandleFunc("/deposit", h.Transfer.Deposit).Methods("POST")
 	authRouter.HandleFunc("/credits", h.Credit.Create).Methods("POST")

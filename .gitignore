@@ -1,21 +1,41 @@
-# Переменные окружения
+# Переменные окружения (секреты!)
 .env
+.env.local
+.env.*.local
 
-# Бинарники
+# Бинарники Windows/Linux/Mac
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
 bank-api
+bank-api.exe
 
-# Папки
+# Отладочные бинарники Go
+*.test
+*.out
+__debug_bin
+__debug_bin.exe
+
+# Папки с логами и временными файлами
 /tmp/
 /logs/
+*.log
 
-# Go
+# Go модули
 vendor/
 
-# IDE
+# IDE и редакторы
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Файлы покрытия тестов
+*.cover
+*.coverprofile
+coverage.out
