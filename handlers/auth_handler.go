@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"bank-api/models"
+	"bank-api/repositories"
 	"bank-api/response"
 	"bank-api/services"
 
@@ -38,7 +39,16 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.authService.Register(&req)
 	if err != nil {
-		response.Error(w, http.StatusConflict, err.Error())
+		// Обработка понятных ошибок
+		switch err {
+		case repositories.ErrDuplicateUsername:
+			response.Error(w, http.StatusConflict, "username already taken")
+			return
+		case repositories.ErrDuplicateEmail:
+			response.Error(w, http.StatusConflict, "email already registered")
+			return
+		}
+		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 

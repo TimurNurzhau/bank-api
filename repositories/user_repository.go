@@ -3,8 +3,16 @@ package repositories
 import (
 	"database/sql"
 	"errors"
+	"strings"
 
 	"bank-api/models"
+)
+
+// Определяем понятные ошибки
+var (
+	ErrDuplicateUsername = errors.New("username already taken")
+	ErrDuplicateEmail    = errors.New("email already registered")
+	ErrUserNotFound      = errors.New("user not found")
 )
 
 type UserRepository struct {
@@ -21,12 +29,26 @@ func (r *UserRepository) Create(user *models.User) error {
 		VALUES ($1, $2, $3)
 		RETURNING id, created_at, updated_at`
 
-	return r.db.QueryRow(
+	err := r.db.QueryRow(
 		query,
 		user.Username,
 		user.Email,
 		user.PasswordHash,
 	).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
+
+	if err != nil {
+		// Обработка PostgreSQL ошибок уникальности
+		if strings.Contains(err.Error(), "duplicate key") {
+			if strings.Contains(err.Error(), "username") {
+				return ErrDuplicateUsername
+			}
+			if strings.Contains(err.Error(), "email") {
+				return ErrDuplicateEmail
+			}
+		}
+		return err
+	}
+	return nil
 }
 
 func (r *UserRepository) FindByUsername(username string) (*models.User, error) {
