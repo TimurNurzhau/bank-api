@@ -49,7 +49,6 @@ func (r *AccountRepository) FindByUserID(userID int) ([]models.Account, error) {
 	return accounts, rows.Err()
 }
 
-// FindByIDAndUserID - проверка прав прямо в SQL
 func (r *AccountRepository) FindByIDAndUserID(id, userID int) (*models.Account, error) {
 	account := &models.Account{}
 	query := `SELECT id, user_id, balance, currency, created_at FROM accounts WHERE id = $1 AND user_id = $2`
@@ -67,7 +66,6 @@ func (r *AccountRepository) FindByIDAndUserID(id, userID int) (*models.Account, 
 	return account, nil
 }
 
-// FindByID - без проверки прав (для внутреннего использования)
 func (r *AccountRepository) FindByID(id int) (*models.Account, error) {
 	account := &models.Account{}
 	query := `SELECT id, user_id, balance, currency, created_at FROM accounts WHERE id = $1`
@@ -103,17 +101,15 @@ func (r *AccountRepository) UpdateBalance(accountID int, amount float64) error {
 	return nil
 }
 
-// TransferInTransaction - перевод между счетами в одной транзакции
-func (r *AccountRepository) TransferInTransaction(fromID, toID int, amount float64) error {
-	// Начинаем транзакцию
-	tx, err := r.db.Begin()
+// TransferWithTransaction - перевод между счетами с записью транзакции в одной транзакции
+func (r *AccountRepository) TransferWithTransaction(fromID, toID int, amount float64, tx *models.Transaction) error {
+	dbTx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer dbTx.Rollback()
 
-	// Списание со счёта отправителя
-	result, err := tx.Exec("UPDATE accounts SET balance = balance - $1 WHERE id = $2 AND balance >= $1", amount, fromID)
+	result, err := dbTx.Exec("UPDATE accounts SET balance = balance - $1 WHERE id = $2 AND balance >= $1", amount, fromID)
 	if err != nil {
 		return err
 	}
@@ -126,52 +122,61 @@ func (r *AccountRepository) TransferInTransaction(fromID, toID int, amount float
 		return errors.New("insufficient funds or account not found")
 	}
 
-	// Зачисление на счёт получателя
-	_, err = tx.Exec("UPDATE accounts SET balance = balance + $1 WHERE id = $2", amount, toID)
+	_, err = dbTx.Exec("UPDATE accounts SET balance = balance + $1 WHERE id = $2", amount, toID)
 	if err != nil {
 		return err
 	}
 
-	// Фиксируем транзакцию
-	return tx.Commit()
+	query := `
+		INSERT INTO transactions (from_account_id, to_account_id, amount, type, status, description)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, created_at`
+
+	err = dbTx.QueryRow(
+		query,
+		tx.FromAccountID,
+		tx.ToAccountID,
+		tx.Amount,
+		tx.Type,
+		tx.Status,
+		tx.Description,
+	).Scan(&tx.ID, &tx.CreatedAt)
+	if err != nil {
+		return err
+	}
+
+	return dbTx.Commit()
 }
 
-// DepositInTransaction - пополнение счёта в транзакции
-func (r *AccountRepository) DepositInTransaction(accountID int, amount float64) error {
-	tx, err := r.db.Begin()
+// DepositWithTransaction - пополнение счёта с записью транзакции в одной транзакции
+func (r *AccountRepository) DepositWithTransaction(accountID int, amount float64, tx *models.Transaction) error {
+	dbTx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer dbTx.Rollback()
 
-	_, err = tx.Exec("UPDATE accounts SET balance = balance + $1 WHERE id = $2", amount, accountID)
-	if err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
-// WithdrawInTransaction - списание со счёта в транзакции
-func (r *AccountRepository) WithdrawInTransaction(accountID int, amount float64) error {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	result, err := tx.Exec("UPDATE accounts SET balance = balance - $1 WHERE id = $2 AND balance >= $1", amount, accountID)
+	_, err = dbTx.Exec("UPDATE accounts SET balance = balance + $1 WHERE id = $2", amount, accountID)
 	if err != nil {
 		return err
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	query := `
+		INSERT INTO transactions (to_account_id, amount, type, status, description)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, created_at`
+
+	err = dbTx.QueryRow(
+		query,
+		tx.ToAccountID,
+		tx.Amount,
+		tx.Type,
+		tx.Status,
+		tx.Description,
+	).Scan(&tx.ID, &tx.CreatedAt)
 	if err != nil {
 		return err
 	}
-	if rowsAffected == 0 {
-		return errors.New("insufficient funds")
-	}
 
-	return tx.Commit()
+	return dbTx.Commit()
 }
