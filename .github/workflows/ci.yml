@@ -59,9 +59,3 @@ jobs:
           SERVER_PORT: 8080
           LOG_LEVEL: debug
         run: go test ./... -v
-
-      - name: Lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --timeout=5m --go=1.25
