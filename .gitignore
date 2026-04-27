@@ -1,0 +1,22 @@
+# Переменные окружения
+.env
+
+# Бинарники
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bank-api
+
+# Папки
+/tmp/
+/logs/
+
+# Go
+vendor/
+go.sum
+
+# IDE
+.vscode/
+.idea/
