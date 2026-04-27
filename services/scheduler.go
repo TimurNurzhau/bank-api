@@ -1,7 +1,6 @@
 package services
 
 import (
-	"context"
 	"time"
 
 	"bank-api/models"
@@ -122,10 +121,9 @@ func (s *Scheduler) processPayment(payment models.PaymentSchedule) {
 
 		s.logger.Infof("Scheduler: successfully processed payment %d for user %d, amount %.2f", payment.ID, user.ID, totalAmount)
 	} else {
-		// Недостаточно средств - начисляем штраф ТОЛЬКО если не начисляли за этот платеж
-		// Проверяем, начисляли ли уже штраф за этот платеж
+		// Недостаточно средств - начисляем штраф только если не начисляли за этот платеж
 		if payment.Penalty == 0 {
-			penalty := payment.Amount * 0.1 // 10%
+			penalty := payment.Amount * 0.1
 			if err := s.creditRepo.AddPenalty(payment.ID, penalty); err != nil {
 				s.logger.Errorf("Scheduler: failed to add penalty to payment %d: %v", payment.ID, err)
 			} else {
@@ -135,8 +133,8 @@ func (s *Scheduler) processPayment(payment models.PaymentSchedule) {
 			s.logger.Warnf("Scheduler: payment %d still unpaid, penalty already applied (%.2f)", payment.ID, payment.Penalty)
 		}
 
-		// Отправляем email о просрочке (не чаще раза в день)
-		if s.emailService != nil && daysOverdue%7 == 0 { // раз в неделю
+		// Отправляем email о просрочке раз в неделю
+		if s.emailService != nil && daysOverdue%7 == 0 {
 			_ = s.emailService.SendCreditReminder(user.Email, payment.Amount, payment.DueDate.Format("2006-01-02"))
 		}
 	}
