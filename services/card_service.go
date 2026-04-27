@@ -47,7 +47,7 @@ func (s *CardService) IssueCard(userID, accountID int) (*models.Card, error) {
 	expiryMonth := int(now.Month())
 	expiryYear := now.Year() + 3
 
-	// ✅ ИСПРАВЛЕНО: Генерация CVV через crypto/rand
+	// Генерация CVV через crypto/rand
 	cvv, err := utils.GenerateCVV()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate CVV: %w", err)
@@ -83,7 +83,7 @@ func (s *CardService) IssueCard(userID, accountID int) (*models.Card, error) {
 	return card, nil
 }
 
-// ✅ ДОБАВЛЕНО: Полная расшифровка номера карты с приватным ключом
+// RevealCardNumber - полная расшифровка номера карты с приватным ключом
 func (s *CardService) RevealCardNumber(cardID, userID int, privateKey string) (string, error) {
 	card, err := s.cardRepo.FindByIDAndUserID(cardID, userID)
 	if err != nil {
@@ -102,23 +102,6 @@ func (s *CardService) RevealCardNumber(cardID, userID int, privateKey string) (s
 	}
 
 	return number, nil
-}
-
-// Вспомогательный метод для расшифровки номера карты (если понадобится)
-func (s *CardService) DecryptCardNumber(cardID, userID int) (string, error) {
-	card, err := s.cardRepo.FindByIDAndUserID(cardID, userID)
-	if err != nil {
-		return "", err
-	}
-
-	// Проверяем HMAC
-	if !utils.VerifyHMAC(card.EncryptedNumber, card.HMAC, s.hmacSecret) {
-		return "", errors.New("card data integrity check failed")
-	}
-
-	// Расшифровываем (нужен приватный ключ, но в этом методе его нет)
-	// Для полной расшифровки нужно передавать приватный ключ в сервис
-	return "", errors.New("decryption requires private key, use RevealCardNumber instead")
 }
 
 func (s *CardService) GetUserCards(userID int) ([]models.Card, error) {

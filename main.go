@@ -72,6 +72,7 @@ func main() {
 	authRouter.HandleFunc("/credits", h.Credit.Create).Methods("POST")
 	authRouter.HandleFunc("/credits", h.Credit.List).Methods("GET")
 	authRouter.HandleFunc("/credits/{creditId}/schedule", h.Credit.GetSchedule).Methods("GET")
+	authRouter.HandleFunc("/credits/{creditId}/repay", h.Credit.EarlyRepayment).Methods("POST")
 	authRouter.HandleFunc("/analytics", h.Analytics.GetAnalytics).Methods("GET")
 	authRouter.HandleFunc("/accounts/{accountId}/predict", h.Analytics.PredictBalance).Methods("GET")
 

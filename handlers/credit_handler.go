@@ -90,3 +90,40 @@ func (h *CreditHandler) GetSchedule(w http.ResponseWriter, r *http.Request) {
 		log.Printf("encode error: %v", err)
 	}
 }
+
+// EarlyRepayment - досрочное погашение
+func (h *CreditHandler) EarlyRepayment(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
+
+	vars := mux.Vars(r)
+	creditID, err := strconv.Atoi(vars["creditId"])
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid credit id")
+		return
+	}
+
+	var req struct {
+		Amount float64 `json:"amount" validate:"required,gt=0"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.Amount <= 0 {
+		response.Error(w, http.StatusBadRequest, "amount must be positive")
+		return
+	}
+
+	if err := h.creditService.EarlyRepayment(creditID, userID, req.Amount); err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":  "success",
+		"message": "Early repayment completed",
+	})
+}

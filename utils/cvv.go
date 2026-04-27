@@ -1,4 +1,3 @@
-// utils/cvv.go
 package utils
 
 import (

@@ -118,3 +118,80 @@ func (s *CreditService) GetCreditSchedule(creditID, userID int) ([]models.Paymen
 
 	return s.creditRepo.FindScheduleByCreditID(creditID)
 }
+
+// EarlyRepayment - досрочное погашение кредита
+func (s *CreditService) EarlyRepayment(creditID, userID int, amount float64) error {
+	// Получаем кредит
+	credit, err := s.creditRepo.FindByID(creditID)
+	if err != nil {
+		return err
+	}
+
+	// Проверка прав
+	if credit.UserID != userID {
+		return errors.New("access denied")
+	}
+
+	// Проверка статуса
+	if credit.Status != "active" {
+		return errors.New("credit is not active")
+	}
+
+	if amount <= 0 {
+		return errors.New("amount must be positive")
+	}
+
+	// Получаем оставшуюся сумму долга
+	remaining, err := s.getRemainingDebt(creditID)
+	if err != nil {
+		return err
+	}
+
+	if amount > remaining {
+		return errors.New("amount exceeds remaining debt")
+	}
+
+	// Получаем счет пользователя
+	accounts, err := s.accountRepo.FindByUserID(userID)
+	if err != nil || len(accounts) == 0 {
+		return errors.New("no account found")
+	}
+
+	account := accounts[0]
+
+	// Проверяем достаточно ли средств
+	if account.Balance < amount {
+		return errors.New("insufficient funds")
+	}
+
+	// Списываем деньги
+	if err := s.accountRepo.UpdateBalance(account.ID, -amount); err != nil {
+		return err
+	}
+
+	// Если погасили полностью - закрываем кредит
+	if amount >= remaining {
+		if err := s.creditRepo.UpdateStatus(creditID, "paid"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// getRemainingDebt - подсчет оставшегося долга
+func (s *CreditService) getRemainingDebt(creditID int) (float64, error) {
+	schedule, err := s.creditRepo.FindScheduleByCreditID(creditID)
+	if err != nil {
+		return 0, err
+	}
+
+	remaining := 0.0
+	for _, payment := range schedule {
+		if !payment.Paid {
+			remaining += payment.Amount + payment.Penalty
+		}
+	}
+
+	return remaining, nil
+}
