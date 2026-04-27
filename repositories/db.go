@@ -3,13 +3,15 @@ package repositories
 import "database/sql"
 
 type Repositories struct {
-	User *UserRepository
-	DB   *sql.DB
+	User    *UserRepository
+	Account *AccountRepository
+	DB      *sql.DB
 }
 
 func NewRepositories(db *sql.DB) *Repositories {
 	return &Repositories{
-		User: NewUserRepository(db),
-		DB:   db,
+		User:    NewUserRepository(db),
+		Account: NewAccountRepository(db),
+		DB:      db,
 	}
 }
