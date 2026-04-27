@@ -8,14 +8,20 @@ import (
 	"bank-api/middleware"
 	"bank-api/models"
 	"bank-api/services"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type CardHandler struct {
 	cardService *services.CardService
+	validator   *validator.Validate
 }
 
 func NewCardHandler(cardService *services.CardService) *CardHandler {
-	return &CardHandler{cardService: cardService}
+	return &CardHandler{
+		cardService: cardService,
+		validator:   validator.New(),
+	}
 }
 
 func (h *CardHandler) Issue(w http.ResponseWriter, r *http.Request) {
@@ -60,3 +66,28 @@ func (h *CardHandler) List(w http.ResponseWriter, r *http.Request) {
 		log.Printf("encode error: %v", err)
 	}
 }
+
+// НОВЫЙ МЕТОД: оплата картой
+func (h *CardHandler) Pay(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
+	_ = userID // Временное решение, чтобы компилятор не ругался
+
+	var req struct {
+		CardID int     `json:"card_id" validate:"required"`
+		Amount float64 `json:"amount" validate:"required,gt=0"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.validator.Struct(req); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Временная заглушка - требует доработки сервиса
+	http.Error(w, `{"error":"payment processing coming soon"}`, http.StatusNotImplemented)
+}
+
