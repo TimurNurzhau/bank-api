@@ -7,6 +7,7 @@ type Repositories struct {
 	Account     *AccountRepository
 	Card        *CardRepository
 	Transaction *TransactionRepository
+	Credit      *CreditRepository
 	DB          *sql.DB
 }
 
@@ -16,6 +17,7 @@ func NewRepositories(db *sql.DB) *Repositories {
 		Account:     NewAccountRepository(db),
 		Card:        NewCardRepository(db),
 		Transaction: NewTransactionRepository(db),
+		Credit:      NewCreditRepository(db),
 		DB:          db,
 	}
 }
