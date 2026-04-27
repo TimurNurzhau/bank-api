@@ -7,6 +7,7 @@ import (
 
 	"bank-api/middleware"
 	"bank-api/models"
+	"bank-api/response"
 	"bank-api/services"
 
 	"github.com/go-playground/validator/v10"
@@ -31,13 +32,13 @@ func (h *CardHandler) Issue(w http.ResponseWriter, r *http.Request) {
 		AccountID int `json:"account_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	card, err := h.cardService.IssueCard(userID, req.AccountID)
 	if err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -53,7 +54,7 @@ func (h *CardHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	cards, err := h.cardService.GetUserCards(userID)
 	if err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -67,7 +68,6 @@ func (h *CardHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Оплата картой
 func (h *CardHandler) Pay(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
 
@@ -77,17 +77,17 @@ func (h *CardHandler) Pay(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if err := h.validator.Struct(req); err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := h.cardService.PayWithCard(req.CardID, userID, req.Amount); err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 

@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"bank-api/middleware"
+	"bank-api/response"
 	"bank-api/services"
 
 	"github.com/gorilla/mux"
@@ -24,7 +25,7 @@ func (h *AnalyticsHandler) GetAnalytics(w http.ResponseWriter, r *http.Request) 
 
 	stats, err := h.analyticsService.GetMonthlyStats(userID)
 	if err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -46,7 +47,7 @@ func (h *AnalyticsHandler) PredictBalance(w http.ResponseWriter, r *http.Request
 
 	accountID, err := strconv.Atoi(vars["accountId"])
 	if err != nil {
-		http.Error(w, `{"error":"invalid account id"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "invalid account id")
 		return
 	}
 
@@ -58,7 +59,7 @@ func (h *AnalyticsHandler) PredictBalance(w http.ResponseWriter, r *http.Request
 
 	balance, err := h.analyticsService.PredictBalance(accountID, userID, days)
 	if err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 

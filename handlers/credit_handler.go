@@ -8,6 +8,7 @@ import (
 
 	"bank-api/middleware"
 	"bank-api/models"
+	"bank-api/response"
 	"bank-api/services"
 
 	"github.com/gorilla/mux"
@@ -30,15 +31,19 @@ func (h *CreditHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	var req models.CreateCreditRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	keyRate, _ := h.cbrService.GetKeyRate()
+	keyRate, err := h.cbrService.GetKeyRate()
+	if err != nil {
+		response.Error(w, http.StatusServiceUnavailable, "failed to get key rate from CBR: "+err.Error())
+		return
+	}
 
 	credit, err := h.creditService.CreateCredit(userID, &req, keyRate)
 	if err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -54,7 +59,7 @@ func (h *CreditHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	credits, err := h.creditService.GetUserCredits(userID)
 	if err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -70,13 +75,13 @@ func (h *CreditHandler) GetSchedule(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	creditID, err := strconv.Atoi(vars["creditId"])
 	if err != nil {
-		http.Error(w, `{"error":"invalid credit id"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "invalid credit id")
 		return
 	}
 
 	schedule, err := h.creditService.GetCreditSchedule(creditID, userID)
 	if err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 

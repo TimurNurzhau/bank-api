@@ -7,6 +7,7 @@ import (
 
 	"bank-api/middleware"
 	"bank-api/models"
+	"bank-api/response"
 	"bank-api/services"
 
 	"github.com/go-playground/validator/v10"
@@ -29,17 +30,17 @@ func (h *TransferHandler) Transfer(w http.ResponseWriter, r *http.Request) {
 
 	var req models.TransferRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if err := h.validator.Struct(req); err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := h.transferService.Transfer(userID, &req); err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -55,17 +56,17 @@ func (h *TransferHandler) Deposit(w http.ResponseWriter, r *http.Request) {
 
 	var req models.DepositRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if err := h.validator.Struct(req); err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := h.transferService.Deposit(userID, &req); err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 

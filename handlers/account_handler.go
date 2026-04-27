@@ -7,6 +7,7 @@ import (
 
 	"bank-api/middleware"
 	"bank-api/models"
+	"bank-api/response"
 	"bank-api/services"
 
 	"github.com/go-playground/validator/v10"
@@ -29,18 +30,18 @@ func (h *AccountHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	var req models.CreateAccountRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if err := h.validator.Struct(req); err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	account, err := h.accountService.CreateAccount(userID, &req)
 	if err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -56,7 +57,7 @@ func (h *AccountHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	accounts, err := h.accountService.GetUserAccounts(userID)
 	if err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
