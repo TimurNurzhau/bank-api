@@ -8,14 +8,20 @@ import (
 	"bank-api/middleware"
 	"bank-api/models"
 	"bank-api/services"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type TransferHandler struct {
 	transferService *services.TransferService
+	validator       *validator.Validate
 }
 
 func NewTransferHandler(transferService *services.TransferService) *TransferHandler {
-	return &TransferHandler{transferService: transferService}
+	return &TransferHandler{
+		transferService: transferService,
+		validator:       validator.New(),
+	}
 }
 
 func (h *TransferHandler) Transfer(w http.ResponseWriter, r *http.Request) {
@@ -27,8 +33,8 @@ func (h *TransferHandler) Transfer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Amount <= 0 {
-		http.Error(w, `{"error":"amount must be positive"}`, http.StatusBadRequest)
+	if err := h.validator.Struct(req); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
 		return
 	}
 
@@ -50,6 +56,11 @@ func (h *TransferHandler) Deposit(w http.ResponseWriter, r *http.Request) {
 	var req models.DepositRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.validator.Struct(req); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
 		return
 	}
 

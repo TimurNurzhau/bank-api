@@ -8,14 +8,20 @@ import (
 	"bank-api/middleware"
 	"bank-api/models"
 	"bank-api/services"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type AccountHandler struct {
 	accountService *services.AccountService
+	validator      *validator.Validate
 }
 
 func NewAccountHandler(accountService *services.AccountService) *AccountHandler {
-	return &AccountHandler{accountService: accountService}
+	return &AccountHandler{
+		accountService: accountService,
+		validator:      validator.New(),
+	}
 }
 
 func (h *AccountHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -24,6 +30,11 @@ func (h *AccountHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req models.CreateAccountRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.validator.Struct(req); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
 		return
 	}
 

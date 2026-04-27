@@ -14,13 +14,13 @@ type Transaction struct {
 }
 
 type TransferRequest struct {
-	FromAccountID int     `json:"from_account_id"`
-	ToAccountID   int     `json:"to_account_id"`
-	Amount        float64 `json:"amount"`
+	FromAccountID int     `json:"from_account_id" validate:"required,min=1"`
+	ToAccountID   int     `json:"to_account_id" validate:"required,min=1"`
+	Amount        float64 `json:"amount" validate:"required,gt=0"`
 	Description   string  `json:"description"`
 }
 
 type DepositRequest struct {
-	AccountID int     `json:"account_id"`
-	Amount    float64 `json:"amount"`
+	AccountID int     `json:"account_id" validate:"required,min=1"`
+	Amount    float64 `json:"amount" validate:"required,gt=0"`
 }

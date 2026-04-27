@@ -11,5 +11,5 @@ type Account struct {
 }
 
 type CreateAccountRequest struct {
-	Currency string `json:"currency"`
+	Currency string `json:"currency" validate:"omitempty,oneof=RUB USD EUR"`
 }

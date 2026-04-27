@@ -7,15 +7,20 @@ import (
 
 	"bank-api/models"
 	"bank-api/services"
-	"bank-api/utils"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type AuthHandler struct {
 	authService *services.AuthService
+	validator   *validator.Validate
 }
 
 func NewAuthHandler(authService *services.AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+	return &AuthHandler{
+		authService: authService,
+		validator:   validator.New(),
+	}
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -25,23 +30,8 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Username == "" || req.Email == "" || req.Password == "" {
-		http.Error(w, `{"error":"username, email and password are required"}`, http.StatusBadRequest)
-		return
-	}
-
-	if !utils.IsValidUsername(req.Username) {
-		http.Error(w, `{"error":"username must be 3-50 characters"}`, http.StatusBadRequest)
-		return
-	}
-
-	if !utils.IsValidEmail(req.Email) {
-		http.Error(w, `{"error":"invalid email format"}`, http.StatusBadRequest)
-		return
-	}
-
-	if !utils.IsValidPassword(req.Password) {
-		http.Error(w, `{"error":"password must be at least 6 characters"}`, http.StatusBadRequest)
+	if err := h.validator.Struct(req); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
 		return
 	}
 
@@ -65,8 +55,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Username == "" || req.Password == "" {
-		http.Error(w, `{"error":"username and password are required"}`, http.StatusBadRequest)
+	if err := h.validator.Struct(req); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
 		return
 	}
 
