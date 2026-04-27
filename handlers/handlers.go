@@ -1,8 +1,10 @@
-package handlers
+﻿package handlers
 
 import (
 	"bank-api/repositories"
 	"bank-api/services"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Handlers struct {
@@ -14,14 +16,14 @@ type Handlers struct {
 	Analytics *AnalyticsHandler
 }
 
-func NewHandlers(svcs *services.Services, repos *repositories.Repositories) *Handlers {
+func NewHandlers(svcs *services.Services, repos *repositories.Repositories, logger *logrus.Logger) *Handlers {
 	analyticsService := services.NewAnalyticsService(repos)
 	return &Handlers{
-		Auth:      NewAuthHandler(svcs.Auth),
-		Account:   NewAccountHandler(svcs.Account),
-		Transfer:  NewTransferHandler(svcs.Transfer),
-		Card:      NewCardHandler(svcs.Card),
-		Credit:    NewCreditHandler(svcs.Credit, svcs.CBR),
-		Analytics: NewAnalyticsHandler(analyticsService),
+		Auth:      NewAuthHandler(svcs.Auth, logger),
+		Account:   NewAccountHandler(svcs.Account, logger),
+		Transfer:  NewTransferHandler(svcs.Transfer, logger),
+		Card:      NewCardHandler(svcs.Card, logger),
+		Credit:    NewCreditHandler(svcs.Credit, svcs.CBR, logger),
+		Analytics: NewAnalyticsHandler(analyticsService, logger),
 	}
 }

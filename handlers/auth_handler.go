@@ -1,8 +1,7 @@
-package handlers
+﻿package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"bank-api/models"
@@ -11,17 +10,20 @@ import (
 	"bank-api/services"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/sirupsen/logrus"
 )
 
 type AuthHandler struct {
 	authService *services.AuthService
 	validator   *validator.Validate
+	logger      *logrus.Logger
 }
 
-func NewAuthHandler(authService *services.AuthService) *AuthHandler {
+func NewAuthHandler(authService *services.AuthService, logger *logrus.Logger) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
 		validator:   validator.New(),
+		logger:      logger,
 	}
 }
 
@@ -55,7 +57,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		log.Printf("encode error: %v", err)
+		h.logger.WithError(err).Error("failed to encode response")
 	}
 }
 
@@ -79,6 +81,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		log.Printf("encode error: %v", err)
+		h.logger.WithError(err).Error("failed to encode response")
 	}
 }

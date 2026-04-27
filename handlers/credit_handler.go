@@ -1,8 +1,7 @@
-package handlers
+﻿package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -12,17 +11,20 @@ import (
 	"bank-api/services"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 type CreditHandler struct {
 	creditService *services.CreditService
 	cbrService    *services.CBRService
+	logger        *logrus.Logger
 }
 
-func NewCreditHandler(creditService *services.CreditService, cbrService *services.CBRService) *CreditHandler {
+func NewCreditHandler(creditService *services.CreditService, cbrService *services.CBRService, logger *logrus.Logger) *CreditHandler {
 	return &CreditHandler{
 		creditService: creditService,
 		cbrService:    cbrService,
+		logger:        logger,
 	}
 }
 
@@ -50,7 +52,7 @@ func (h *CreditHandler) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(credit); err != nil {
-		log.Printf("encode error: %v", err)
+		h.logger.WithError(err).Error("failed to encode response")
 	}
 }
 
@@ -65,7 +67,7 @@ func (h *CreditHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(credits); err != nil {
-		log.Printf("encode error: %v", err)
+		h.logger.WithError(err).Error("failed to encode response")
 	}
 }
 
@@ -87,11 +89,10 @@ func (h *CreditHandler) GetSchedule(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(schedule); err != nil {
-		log.Printf("encode error: %v", err)
+		h.logger.WithError(err).Error("failed to encode response")
 	}
 }
 
-// EarlyRepayment - досрочное погашение
 func (h *CreditHandler) EarlyRepayment(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
 
@@ -122,8 +123,10 @@ func (h *CreditHandler) EarlyRepayment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":  "success",
 		"message": "Early repayment completed",
-	})
+	}); err != nil {
+		h.logger.WithError(err).Error("failed to encode response")
+	}
 }

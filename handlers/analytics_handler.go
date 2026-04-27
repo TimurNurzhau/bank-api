@@ -1,4 +1,4 @@
-package handlers
+﻿package handlers
 
 import (
 	"encoding/json"
@@ -10,14 +10,19 @@ import (
 	"bank-api/services"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 type AnalyticsHandler struct {
 	analyticsService *services.AnalyticsService
+	logger           *logrus.Logger
 }
 
-func NewAnalyticsHandler(analyticsService *services.AnalyticsService) *AnalyticsHandler {
-	return &AnalyticsHandler{analyticsService: analyticsService}
+func NewAnalyticsHandler(analyticsService *services.AnalyticsService, logger *logrus.Logger) *AnalyticsHandler {
+	return &AnalyticsHandler{
+		analyticsService: analyticsService,
+		logger:           logger,
+	}
 }
 
 func (h *AnalyticsHandler) GetAnalytics(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +43,9 @@ func (h *AnalyticsHandler) GetAnalytics(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		h.logger.WithError(err).Error("failed to encode response")
+	}
 }
 
 func (h *AnalyticsHandler) PredictBalance(w http.ResponseWriter, r *http.Request) {
@@ -64,8 +71,10 @@ func (h *AnalyticsHandler) PredictBalance(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"predicted_balance": balance,
 		"days":              days,
-	})
+	}); err != nil {
+		h.logger.WithError(err).Error("failed to encode response")
+	}
 }

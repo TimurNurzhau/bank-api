@@ -1,8 +1,7 @@
-package handlers
+﻿package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"bank-api/middleware"
@@ -11,17 +10,20 @@ import (
 	"bank-api/services"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/sirupsen/logrus"
 )
 
 type AccountHandler struct {
 	accountService *services.AccountService
 	validator      *validator.Validate
+	logger         *logrus.Logger
 }
 
-func NewAccountHandler(accountService *services.AccountService) *AccountHandler {
+func NewAccountHandler(accountService *services.AccountService, logger *logrus.Logger) *AccountHandler {
 	return &AccountHandler{
 		accountService: accountService,
 		validator:      validator.New(),
+		logger:         logger,
 	}
 }
 
@@ -48,7 +50,7 @@ func (h *AccountHandler) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(account); err != nil {
-		log.Printf("encode error: %v", err)
+		h.logger.WithError(err).Error("failed to encode response")
 	}
 }
 
@@ -71,6 +73,6 @@ func (h *AccountHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(accounts); err != nil {
-		log.Printf("encode error: %v", err)
+		h.logger.WithError(err).Error("failed to encode response")
 	}
 }

@@ -1,8 +1,7 @@
-package handlers
+﻿package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"bank-api/middleware"
@@ -12,17 +11,20 @@ import (
 	"bank-api/utils"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/sirupsen/logrus"
 )
 
 type CardHandler struct {
 	cardService *services.CardService
 	validator   *validator.Validate
+	logger      *logrus.Logger
 }
 
-func NewCardHandler(cardService *services.CardService) *CardHandler {
+func NewCardHandler(cardService *services.CardService, logger *logrus.Logger) *CardHandler {
 	return &CardHandler{
 		cardService: cardService,
 		validator:   validator.New(),
+		logger:      logger,
 	}
 }
 
@@ -46,7 +48,7 @@ func (h *CardHandler) Issue(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(card); err != nil {
-		log.Printf("encode error: %v", err)
+		h.logger.WithError(err).Error("failed to encode response")
 	}
 }
 
@@ -70,7 +72,7 @@ func (h *CardHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(cards); err != nil {
-		log.Printf("encode error: %v", err)
+		h.logger.WithError(err).Error("failed to encode response")
 	}
 }
 
@@ -99,8 +101,10 @@ func (h *CardHandler) Pay(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":  "success",
 		"message": "Payment completed successfully",
-	})
+	}); err != nil {
+		h.logger.WithError(err).Error("failed to encode response")
+	}
 }

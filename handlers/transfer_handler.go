@@ -1,8 +1,7 @@
-package handlers
+﻿package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"bank-api/middleware"
@@ -11,17 +10,20 @@ import (
 	"bank-api/services"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/sirupsen/logrus"
 )
 
 type TransferHandler struct {
 	transferService *services.TransferService
 	validator       *validator.Validate
+	logger          *logrus.Logger
 }
 
-func NewTransferHandler(transferService *services.TransferService) *TransferHandler {
+func NewTransferHandler(transferService *services.TransferService, logger *logrus.Logger) *TransferHandler {
 	return &TransferHandler{
 		transferService: transferService,
 		validator:       validator.New(),
+		logger:          logger,
 	}
 }
 
@@ -54,7 +56,7 @@ func (h *TransferHandler) Transfer(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(map[string]string{"status": "success"}); err != nil {
-		log.Printf("encode error: %v", err)
+		h.logger.WithError(err).Error("failed to encode response")
 	}
 }
 
@@ -81,6 +83,6 @@ func (h *TransferHandler) Deposit(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(map[string]string{"status": "success"}); err != nil {
-		log.Printf("encode error: %v", err)
+		h.logger.WithError(err).Error("failed to encode response")
 	}
 }

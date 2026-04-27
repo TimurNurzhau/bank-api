@@ -48,7 +48,7 @@ func main() {
 
 	repos := repositories.NewRepositories(db)
 	svcs := services.NewServices(repos, cfg, logger)
-	h := handlers.NewHandlers(svcs, repos)
+	h := handlers.NewHandlers(svcs, repos, logger)
 
 	scheduler := services.NewScheduler(repos, svcs.Email, logger)
 	scheduler.Start(12 * time.Hour)
