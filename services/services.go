@@ -5,6 +5,8 @@ import (
 
 	"bank-api/config"
 	"bank-api/repositories"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Services struct {
@@ -17,9 +19,8 @@ type Services struct {
 	Email    *EmailService
 }
 
-func NewServices(repos *repositories.Repositories, cfg *config.Config) *Services {
+func NewServices(repos *repositories.Repositories, cfg *config.Config, logger *logrus.Logger) *Services {
 	accountService := NewAccountService(repos.Account)
-
 	smtpPort, _ := strconv.Atoi(cfg.SMTPPort)
 
 	return &Services{

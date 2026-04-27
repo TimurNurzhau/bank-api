@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -16,9 +15,14 @@ import (
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+	logger.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
+
 	cfg := config.Load()
 
 	dsn := fmt.Sprintf(
@@ -28,56 +32,44 @@ func main() {
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
+		logger.Fatalf("Failed to open database: %v", err)
 	}
 	defer db.Close()
 
 	if err := db.Ping(); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
+		logger.Fatalf("Failed to ping database: %v", err)
 	}
 
-	fmt.Println("Successfully connected to PostgreSQL!")
+	logger.Info("Successfully connected to PostgreSQL!")
 
-	// Инициализация слоёв
 	repos := repositories.NewRepositories(db)
-	svcs := services.NewServices(repos, cfg)
-	h := handlers.NewHandlers(svcs)
+	svcs := services.NewServices(repos, cfg, logger)
+	h := handlers.NewHandlers(svcs, repos)
 
-	// Шедулер
-	scheduler := services.NewScheduler(repos, svcs.Email)
+	scheduler := services.NewScheduler(repos, svcs.Email, logger)
 	scheduler.Start(12 * time.Hour)
 
-	// Маршрутизатор
 	r := mux.NewRouter()
+	r.Use(middleware.LoggingMiddleware(logger))
 
-	// Middleware
-	r.Use(middleware.LoggingMiddleware)
-
-	// Публичные эндпоинты
 	r.HandleFunc("/register", h.Auth.Register).Methods("POST")
 	r.HandleFunc("/login", h.Auth.Login).Methods("POST")
 
-	// Защищённые эндпоинты
 	authRouter := r.PathPrefix("").Subrouter()
 	authRouter.Use(middleware.AuthMiddleware(cfg.JWTSecret))
 
-	// Счета
 	authRouter.HandleFunc("/accounts", h.Account.Create).Methods("POST")
 	authRouter.HandleFunc("/accounts", h.Account.List).Methods("GET")
-
-	// Карты
 	authRouter.HandleFunc("/cards", h.Card.Issue).Methods("POST")
 	authRouter.HandleFunc("/cards", h.Card.List).Methods("GET")
-
-	// Переводы
 	authRouter.HandleFunc("/transfer", h.Transfer.Transfer).Methods("POST")
 	authRouter.HandleFunc("/deposit", h.Transfer.Deposit).Methods("POST")
-
-	// Кредиты
 	authRouter.HandleFunc("/credits", h.Credit.Create).Methods("POST")
 	authRouter.HandleFunc("/credits", h.Credit.List).Methods("GET")
 	authRouter.HandleFunc("/credits/{creditId}/schedule", h.Credit.GetSchedule).Methods("GET")
+	authRouter.HandleFunc("/analytics", h.Analytics.GetAnalytics).Methods("GET")
+	authRouter.HandleFunc("/accounts/{accountId}/predict", h.Analytics.PredictBalance).Methods("GET")
 
-	fmt.Printf("Server starting on port %s\n", cfg.ServerPort)
-	log.Fatal(http.ListenAndServe(":"+cfg.ServerPort, r))
+	logger.Infof("Server starting on port %s", cfg.ServerPort)
+	logger.Fatal(http.ListenAndServe(":"+cfg.ServerPort, r))
 }

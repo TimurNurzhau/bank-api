@@ -1,21 +1,27 @@
 package handlers
 
-import "bank-api/services"
+import (
+	"bank-api/repositories"
+	"bank-api/services"
+)
 
 type Handlers struct {
-	Auth     *AuthHandler
-	Account  *AccountHandler
-	Transfer *TransferHandler
-	Card     *CardHandler
-	Credit   *CreditHandler
+	Auth      *AuthHandler
+	Account   *AccountHandler
+	Transfer  *TransferHandler
+	Card      *CardHandler
+	Credit    *CreditHandler
+	Analytics *AnalyticsHandler
 }
 
-func NewHandlers(services *services.Services) *Handlers {
+func NewHandlers(svcs *services.Services, repos *repositories.Repositories) *Handlers {
+	analyticsService := services.NewAnalyticsService(repos)
 	return &Handlers{
-		Auth:     NewAuthHandler(services.Auth),
-		Account:  NewAccountHandler(services.Account),
-		Transfer: NewTransferHandler(services.Transfer),
-		Card:     NewCardHandler(services.Card),
-		Credit:   NewCreditHandler(services.Credit, services.CBR),
+		Auth:      NewAuthHandler(svcs.Auth),
+		Account:   NewAccountHandler(svcs.Account),
+		Transfer:  NewTransferHandler(svcs.Transfer),
+		Card:      NewCardHandler(svcs.Card),
+		Credit:    NewCreditHandler(svcs.Credit, svcs.CBR),
+		Analytics: NewAnalyticsHandler(analyticsService),
 	}
 }
