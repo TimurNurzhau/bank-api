@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -43,7 +44,9 @@ func (h *CreditHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(credit)
+	if err := json.NewEncoder(w).Encode(credit); err != nil {
+		log.Printf("encode error: %v", err)
+	}
 }
 
 func (h *CreditHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +59,9 @@ func (h *CreditHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(credits)
+	if err := json.NewEncoder(w).Encode(credits); err != nil {
+		log.Printf("encode error: %v", err)
+	}
 }
 
 func (h *CreditHandler) GetSchedule(w http.ResponseWriter, r *http.Request) {
@@ -76,5 +81,7 @@ func (h *CreditHandler) GetSchedule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(schedule)
+	if err := json.NewEncoder(w).Encode(schedule); err != nil {
+		log.Printf("encode error: %v", err)
+	}
 }

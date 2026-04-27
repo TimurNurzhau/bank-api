@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"bank-api/middleware"
@@ -34,7 +35,9 @@ func (h *AccountHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(account)
+	if err := json.NewEncoder(w).Encode(account); err != nil {
+		log.Printf("encode error: %v", err)
+	}
 }
 
 func (h *AccountHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -47,5 +50,7 @@ func (h *AccountHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(accounts)
+	if err := json.NewEncoder(w).Encode(accounts); err != nil {
+		log.Printf("encode error: %v", err)
+	}
 }
