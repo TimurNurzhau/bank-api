@@ -136,6 +136,19 @@ func (s *CardService) PayWithCard(cardID, userID int, amount float64) error {
 		return err
 	}
 
+	// ========== ПРОВЕРКА СРОКА ДЕЙСТВИЯ КАРТЫ ==========
+	now := time.Now()
+	currentYear := now.Year()
+	currentMonth := int(now.Month())
+
+	if card.ExpiryYear < currentYear {
+		return errors.New("card has expired")
+	}
+	if card.ExpiryYear == currentYear && card.ExpiryMonth < currentMonth {
+		return errors.New("card has expired")
+	}
+	// ===================================================
+
 	// Проверяем HMAC (целостность зашифрованных данных)
 	if !utils.VerifyHMAC(card.EncryptedNumber, card.HMAC, s.hmacSecret) {
 		return errors.New("card data integrity check failed")
